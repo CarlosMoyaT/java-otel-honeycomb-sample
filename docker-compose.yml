@@ -1,0 +1,51 @@
+services:
+  db:
+    build:
+      context: ./db-service
+      dockerfile: Dockerfile
+    image: java-otel-honeycomb-sample/db:local
+    container_name: java-otel-db
+    env_file:
+      - ./db-service/.env
+    ports:
+      - "8082:8082"
+    networks:
+      - appnet
+
+  provider:
+    build:
+      context: ./provider-service
+      dockerfile: Dockerfile
+    image: java-otel-honeycomb-sample/provider:local
+    container_name: java-otel-provider
+    env_file:
+      - ./provider-service/.env
+    ports:
+      - "8081:8081"
+    depends_on:
+      - db
+    networks:
+      - appnet
+
+  server:
+    build:
+      context: ./server-service
+      dockerfile: Dockerfile
+    image: java-otel-honeycomb-sample/server:local
+    container_name: java-otel-server
+    env_file:
+      - ./server-service/.env
+    environment:
+      - PROVIDER_BASE_URL=${PROVIDER_BASE_URL:-http://provider:8081}
+      - DB_BASE_URL=${DB_BASE_URL:-http://db:8082}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - provider
+      - db
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
